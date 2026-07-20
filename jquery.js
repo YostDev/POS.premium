@@ -98,7 +98,7 @@ $(document).ready(function() {
         }
 
         
-        const TELEFONO_WHATSAPP = "549375528299"; 
+        const TELEFONO_WHATSAPP = "5493758528299"; 
         
         let mensaje = "¡Hola! Me gustaría realizar el siguiente pedido:\n\n";
         let total = 0;
