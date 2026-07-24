@@ -1,9 +1,8 @@
-/* --- VARIABLES Y CONFIGURACIÓN GENERAL --- */
 :root {
-    --blanco: #fdfdfd;
-    --texto: #333334;
-    --principal: #221e25;
-    --verde-landing: #85b736;
+    --blanco: #fff7ef;
+    --texto: #343333;
+    --principal: #25211e;
+    --verde-landing: #c2c2c2;
 }
 
 html {
@@ -22,7 +21,7 @@ body {
     background-color: var(--blanco);
     max-width: 1100px;
     margin: 0 auto;
-    padding-top: 90px; /* Evita que el menú fijo tape el contenido al cargar la página */
+    padding-top: 90px; 
 }
 
 button:hover {
@@ -30,10 +29,9 @@ button:hover {
     transform: scale(1.1);
 }
 
-/* --- MENÚ SUPERIOR (FIJO) --- */
 .menu-superior {
     position: fixed;
-    z-index: 100; /* Asegura que quede por encima de todo */
+    z-index: 100; 
     top: 15px; left: 50%;
     transform: translateX(-50%);
     background-color: var(--blanco);
@@ -65,16 +63,15 @@ button:hover {
     transform: scale(1.05); 
 }
 
-/* --- LANDING PAGE (RESPONSIVA Y CORREGIDA) --- */
 .landing {
     background-color: var(--verde-landing);
     display: flex;
-    flex-direction: column-reverse; /* En móvil, la imagen va arriba del texto */
+    flex-direction: column-reverse;
     border-radius: 20px;
     margin: 15px;
     overflow: hidden;
     color: var(--blanco);
-    padding-top: 60px; /* Desplaza la imagen hacia abajo para que el menú no tape el rociador */
+    padding-top: 60px; 
 }
 
 .landing-content {
@@ -117,16 +114,15 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px; /* Respiro visual en los costados */
+    padding: 10px;
 }
 
 .landing-image img {
     width: auto;
-    max-height: 280px; /* Evita que la botella se agigante en móviles */
+    max-height: 280px; 
     object-fit: contain;
 }
 
-/* --- CATEGORÍAS (SCROLL HORIZONTAL) --- */
 .categorias {
     width: 100%; 
     padding: 25px 15px;
@@ -158,7 +154,6 @@ button:hover {
     object-fit: contain; 
 }
 
-/* --- BUSCADOR --- */
 .buscador-container {
     width: 90%; 
     margin: 20px auto;
@@ -188,7 +183,6 @@ button:hover {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* --- TARJETAS DE PRODUCTOS --- */
 .contenedor-productos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Tarjetas compactas de a dos en móvil */
@@ -264,7 +258,7 @@ button:hover {
     background-color: #000;
 }
 
-/* --- CARRITO DE COMPRAS --- */
+
 #carrito-compras {
     position: fixed; 
     right: 0; top: 0;
@@ -345,7 +339,6 @@ button:hover {
     cursor: pointer; 
 }
 
-/* --- MENSAJES DE ESTADO --- */
 .Aviso { 
     color: #888888; 
     text-align: center; 
@@ -361,16 +354,11 @@ button:hover {
     font-size: 0.9rem; 
 }
 
-
-/* ==========================================================
-   MEDIA QUERIES - DISEÑO PARA PANTALLAS GRANDES (PC / TABLET)
-   ========================================================== */
 @media (min-width: 768px) {
     body { 
         padding-top: 110px; 
     }
     
-    /* La landing se vuelve horizontal (50/50 split) */
     .landing {
         flex-direction: row;
         height: 400px;
@@ -399,7 +387,6 @@ button:hover {
         object-fit: cover; 
     }
 
-    /* Grid de productos robusto para pantallas de escritorio */
     .contenedor-productos {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 25px; 
@@ -414,13 +401,13 @@ button:hover {
         font-size: 1.1rem; 
     }
     
-    /* El carrito emerge lateralmente en PC en vez de cubrir toda la pantalla */
+    
     #carrito-compras {
         width: 400px;
         box-shadow: -5px 0 15px rgba(0,0,0,0.1);
     }
 }
-/* --- SECCIÓN CÓMO COMPRAR (NUEVA) --- */
+
 .como-comprar {
     padding: 30px 15px;
     text-align: center;
@@ -458,7 +445,7 @@ button:hover {
 .paso-icono {
     width: 60px;
     height: 60px;
-    background-color: #f0f7e6; /* Verde sutil complementario */
+    background-color: #f0f7e6;
     color: var(--verde-landing);
     border-radius: 50%;
     display: flex;
@@ -468,7 +455,6 @@ button:hover {
     margin-bottom: 15px;
 }
 
-/* Color distintivo para el paso final de Whatsapp */
 .paso-tarjeta:last-child .paso-icono {
     background-color: #e6f7ed;
     color: #25d366;
@@ -488,7 +474,6 @@ button:hover {
     margin: 0;
 }
 
-/* --- SECCIÓN MÉTODOS DE PAGO (NUEVA) --- */
 .metodos-pago {
     margin: 30px 15px;
     padding: 20px;
@@ -527,4 +512,72 @@ button:hover {
 
 .pago-item i {
     color: var(--verde-landing);
+}
+
+.site-footer {
+    background-color: var(--principal);
+    color: var(--blanco);
+    border-radius: 20px 20px 0 0;
+    margin-top: 40px;
+    padding: 30px 20px 15px 20px;
+}
+
+.footer-contenido {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.footer-seccion h4 {
+    color: var(--verde-landing);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-seccion p {
+    font-size: 0.9rem;
+    color: #ddd;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-seccion p i {
+    color: var(--verde-landing);
+    width: 16px;
+}
+
+.footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--verde-landing);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 5px;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.footer-link:hover {
+    color: #fff;
+    transform: translateX(5px);
+}
+
+.footer-derechos {
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+}
+
+.footer-derechos p {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin: 0;
 }

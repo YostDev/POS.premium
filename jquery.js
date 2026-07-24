@@ -14,7 +14,13 @@ $(document).ready(function() {
     const SUPABASE_URL = 'https://bxwxulztcencoiiqogxy.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_DcBleL9fOIrDT9cRn4QOfA_b5ALE3JD'; 
     const NOMBRE_TABLA = 'Clientes'; 
-    const NegocioId = 1;
+function obtenerSlug() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('negocio') || 'aromasbonitos';
+}
+
+let NegocioId = null; 
+const SLUG_ACTUAL = obtenerSlug();
 
     let carrito = [];
 
@@ -93,12 +99,12 @@ $(document).ready(function() {
    
     $('.btn-pagar').click(function() {
         if (carrito.length === 0) {
-            alert("Tu carrito está vacío. ¡Agrega algunos aromas bonitos primero!");
+            alert("Tu carrito está vacío.");
             return;
         }
 
         
-        const TELEFONO_WHATSAPP = "5493758528299"; 
+        const TELEFONO_WHATSAPP = "-"; 
         
         let mensaje = "¡Hola! Me gustaría realizar el siguiente pedido:\n\n";
         let total = 0;
@@ -168,6 +174,74 @@ $(document).ready(function() {
             }
         });
     }
+function inicializarNegocio() {
+    $.ajax({
+        url: `${SUPABASE_URL}/rest/v1/Negocios?slug=eq.${SLUG_ACTUAL}&select=*`,
+        type: 'GET',
+        headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        success: function(data) {
+            if (data.length > 0) {
+                const negocio = data[0];
+                NegocioId = negocio.id; 
+                
+                if(negocio.nombre) $('h1').text(negocio.nombre);
+                if(negocio.logo_url) $('.logo').attr('src', negocio.logo_url);
 
-    cargarProductos();
+                cargarProductos(); 
+            } else {
+                alert("Negocio no encontrado.");
+            }
+        }
+    });
+}
+
+inicializarNegocio();
+function inicializarNegocio() {
+    $.ajax({
+        url: `${SUPABASE_URL}/rest/v1/Negocios?slug=eq.${SLUG_ACTUAL}&select=*`,
+        type: 'GET',
+        headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        success: function(data) {
+            if (data.length > 0) {
+                const negocio = data[0];
+                NegocioId = negocio.id; 
+                
+                if(negocio.nombre) {
+                    $('h1').text(negocio.nombre); 
+                    document.title = negocio.nombre; 
+                }
+                if(negocio.logo_url) $('.logo').attr('src', negocio.logo_url);
+
+                if(negocio.color_primario) {
+                    document.documentElement.style.setProperty('--verde-landing', negocio.color_primario);
+                }
+                
+                if(negocio.color_secundario) {
+                    document.documentElement.style.setProperty('--color-secundario', negocio.color_secundario);
+                }
+                if(negocio.descripcion) $('#descripcion').text(negocio.descripcion);
+                if(negocio.banner) $('#banner_image').attr('src', negocio.banner);
+
+                if(negocio.whatsapp) $('#wasap').html(`<i class="fab fa-whatsapp"></i> ${negocio.whatsapp}`);
+                if(negocio.direccion) $('#direccion').html(`<i class="fas fa-map-marker-alt"></i> ${negocio.direccion}`);
+                if(negocio.horarios) $('#horarios').html(`<i class="fas fa-clock"></i> ${negocio.horarios}`);
+                if(negocio.gmail) $('#gmail').html(`<i class="fas fa-envelope"></i> ${negocio.gmail}`);
+                if(negocio.pagina_web) $('#pagina').attr('href', negocio.pagina_web).html(`<i class="fas fa-external-link-alt"></i> ${negocio.pagina_web}`);
+
+                TELEFONO_WHATSAPP = negocio.whatsapp;
+
+                cargarProductos(); 
+            } else {
+                alert("Negocio no encontrado.");
+            }
+        }
+    });
+}
+inicializarNegocio()
 });

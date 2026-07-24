@@ -20,12 +20,12 @@
 
     <div class="landing">
         <div class="landing-content">
-            <h1>Aromas Bonitos</h1>
-            <p>Busca en el catálogo lo que necesitas y encuentra tu aroma ideal.</p>
-            <button class="accion-landing" onclick="document.getElementById('catalogo').scrollIntoView({behavior: 'smooth'})">Ver Catálogo</button>
+            <h1>Buck"s Burgers</h1>
+            <p id="descripcion">Navega por nuestro menu virtual y encontra las mejores promos.</p>
+            <button class="accion-landing" onclick="document.getElementById('catalogo').scrollIntoView({behavior: 'smooth'})">Ver Productos</button>
         </div>
         <div class="landing-image">
-            <img src="banner.png" alt="Banner Aromas Bonitos">
+            <img id="banner_image" src="banner.png" alt="Banner Aromas Bonitos">
         </div>
     </div>
 
@@ -37,15 +37,15 @@
                 <div class="paso-icono">
                     <i class="fas fa-search"></i>
                 </div>
-                <h3>1. Selecciona tus productos</h3>
-                <p>Explora nuestro catálogo y agrega tus aromas favoritos al carrito de compras.</p>
+                <h3>1. Selecciona tu producto favorito</h3>
+                <p>Explora nuestra pagina y agrega lo que te guste al carrito de compras.</p>
             </div>
             <div class="paso-tarjeta">
                 <div class="paso-icono">
                     <i class="fas fa-shopping-basket"></i>
                 </div>
                 <h3>2. Revisa el carrito</h3>
-                <p>Haz clic en el icono del carrito para verificar tus productos seleccionados y el total.</p>
+                <p>Haz clic en el icono del carrito para verificar tus pedidos y el total.</p>
             </div>
             <div class="paso-tarjeta">
                 <div class="paso-icono">
@@ -59,22 +59,42 @@
 
     <div id="catalogo" class="buscador-container">
         <i class="fas fa-search"></i>
-        <input type="text" id="buscador" placeholder="Buscar un aroma, perfume...">
+        <input type="text" id="buscador" placeholder="Busca tus promos aqui...">
     </div>
 
     <div class="contenedor-productos">
         <p class="Aviso">Cargando...</p>
     </div>
   
-    <p class="final">No hay más productos.</p>
+    <p class="final">No hay mas productos</p>
+    <br><br>
 
-    <div class="metodos-pago">
-        <h3><i class="fas fa-credit-card"></i> Métodos de pago aceptados</h3>
-        <div class="pago-opciones">
-            <span class="pago-item"><i class="fas fa-money-bill-wave"></i> Efectivo</span>
-            <span class="pago-item"><i class="fas fa-university"></i> Transferencia Bancaria</span>
+    <footer class="site-footer">
+        <div class="footer-contenido">
+            <div class="footer-seccion">
+                <h4><i class="fas fa-headset"></i> Contacto</h4>
+                <p id="wasap"><i class="fab fa-whatsapp"></i> -</p>
+                <p id="gmail"><i class="fas fa-envelope"></i> - </p>
+            </div>
+
+            <div class="footer-seccion">
+                <h4><i class="fas fa-store"></i> Nuestro Local</h4>
+                <p id="direccion"><i class="fas fa-map-marker-alt"></i> -</p>
+                <p id="horarios"><i class="fas fa-clock"></i>-</p>
+            </div>
+
+            <div class="footer-seccion">         
+                <h4><i class="fas fa-globe"></i> Visítanos</h4>
+                <a id="pagina" href="https://www.bucksburgers.com" target="_blank" class="footer-link">
+                    <i class="fas fa-external-link-alt"></i> -
+                </a>
+            </div>
         </div>
-    </div>
+
+        <div class="footer-derechos">
+            <p>&copy; YostDev</p>
+        </div>
+    </footer>
 
     <div id="carrito-compras">
         <div class="carrito-header">

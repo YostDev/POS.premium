@@ -1,623 +1,383 @@
-const pagina2 = $(".pagina-principal");
-const pagina3 = $(".pagina-ticket");
-const pagina1 = $(".pagina-estadistica");
-pagina1.hide();
-pagina2.show();
-pagina3.hide();
+const SU = 'https://bxwxulztcencoiiqogxy.supabase.co';
+const SK = 'sb_publishable_DcBleL9fOIrDT9cRn4QOfA_b5ALE3JD';
 
-$(".btn-inicio").click(function(){
-    let accion = $(this).data("accion");
-
-    if(accion == "estadistica"){
-        pagina1.show();
-        pagina2.hide();
-        pagina3.hide();
-    } else if(accion == "inventario"){
-        pagina1.hide();
-        pagina2.show();
-        pagina3.hide();
-    } else if(accion == "ticket"){
-        pagina1.hide();
-        pagina2.hide();
-        pagina3.show();
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.onmouseenter = Swal.stopTimer;
+        toast.onmouseleave = Swal.resumeTimer;
     }
 });
 
-
-$(".panel").hide();
-let control = true;
-$(".añadir").click(function(){
-    if (control){   
-        $(".panel").show();
-        $(this).html('<i class="fas fa-arrow-left"></i>');
-        $(this).addClass('subir');
-        $(".panel").addClass('subirPanel');
-        control = !control;
-    } else {
-        $(".panel").hide();
-        control = !control;
-        $(".panel").removeClass('subirPanel');
-        $(this).removeClass('subir');
-        $(this).html('<i class="fas fa-plus"></i>');
-    }
-});
-
-function obtenerClaseStock(cantidad) {
-    return cantidad <= 5 ? 'bajo-stock' : '';
+let aT = localStorage.getItem('supabase_token');
+if (!aT) {
+    const u = new URLSearchParams(window.location.search);
+    window.location.href = `login.html${u.get('negocio') ? '?negocio=' + u.get('negocio') : ''}`;
 }
 
-function comprimirImagen(archivo, anchoMaximo, altoMaximo, calidad) {
-    return new Promise((resolve, reject) => {
-        const lector = new FileReader();
-        lector.readAsDataURL(archivo);
-        
-        lector.onload = function(evento) {
-            const img = new Image();
-            img.src = evento.target.result;
+let isRefreshingToken = false;
+$(document).ajaxError(function(event, jqXHR, settings, error) {
+    if (jqXHR.status === 401) {
+        if (settings.url.includes('/auth/v1/token')) {
+            cerrarSesionYRedirigir();
+            return;
+        }
+
+        if (!isRefreshingToken) {
+            isRefreshingToken = true;
+            const refreshToken = localStorage.getItem('supabase_refresh_token');
             
-            img.onload = function() {
-                let ancho = img.width;
-                let alto = img.height;
-                
-                if (ancho > alto) {
-                    if (ancho > anchoMaximo) {
-                        alto = Math.round((alto * anchoMaximo) / ancho);
-                        ancho = anchoMaximo;
+            if (!refreshToken) {
+                cerrarSesionYRedirigir();
+                return;
+            }
+
+            $.ajax({
+                url: `${SU}/auth/v1/token?grant_type=refresh_token`,
+                type: 'POST',
+                headers: {
+                    'apikey': SK,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({ refresh_token: refreshToken }),
+                success: function(res) {
+                    isRefreshingToken = false;
+                    localStorage.setItem('supabase_token', res.access_token);
+                    if (res.refresh_token) {
+                        localStorage.setItem('supabase_refresh_token', res.refresh_token);
                     }
-                } else {
-                    if (alto > altoMaximo) {
-                        ancho = Math.round((ancho * altoMaximo) / alto);
-                        alto = altoMaximo;
-                    }
+                    window.location.reload();
+                },
+                error: function() {
+                    isRefreshingToken = false;
+                    cerrarSesionYRedirigir();
                 }
-                
-                const canvas = document.createElement('canvas');
-                canvas.width = ancho;
-                canvas.height = alto;
-                const ctx = canvas.getContext('2d');
+            });
+        }
+    }
+});
 
-                let tipoSalida = archivo.type; 
+function cerrarSesionYRedirigir() {
+    localStorage.removeItem('supabase_token');
+    localStorage.removeItem('supabase_refresh_token');
+    localStorage.removeItem('cart_temp');
+    const u = new URLSearchParams(window.location.search);
+    window.location.href = `login.html${u.get('negocio') ? '?negocio=' + u.get('negocio') : ''}`;
+}
 
-                if (tipoSalida === 'image/jpeg') {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, ancho, alto);
-                }
+const p2 = $(".pagina-principal"), p3 = $(".pagina-ticket"), p1 = $(".pagina-estadistica");
+p1.hide(); p2.show(); p3.hide();
 
-                ctx.drawImage(img, 0, 0, ancho, alto);
-                
-                canvas.toBlob(function(blob) {
-                    if (blob) {
-                        resolve(new File([blob], archivo.name, {
-                            type: tipoSalida,
-                            lastModified: Date.now()
-                        }));
-                    } else {
-                        reject(new Error("No se pudo comprimir la imagen"));
-                    }
-                }, tipoSalida, calidad); 
-            };
-            
-            img.onerror = (err) => reject(err);
-        };
-        
-        lector.onerror = (err) => reject(err);
+$(".btn-inicio").click(function(){
+    $(".btn-inicio").removeClass("activo"); $(this).addClass("activo");
+    let a = $(this).data("accion");
+    if(a == "estadistica"){ p1.show(); p2.hide(); p3.hide(); }
+    else if(a == "inventario"){ p1.hide(); p2.show(); p3.hide(); }
+    else if(a == "ticket"){ p1.hide(); p2.hide(); p3.show(); }
+});
+
+$(".panel").hide();
+let pC = true;
+$(".añadir").click(function(){
+    if(pC){ $(".panel").show().addClass('subirPanel'); $(this).html('<i class="fas fa-arrow-left"></i>').addClass('subir'); }
+    else { $(".panel").hide().removeClass('subirPanel'); $(this).removeClass('subir').html('<i class="fas fa-plus"></i>'); }
+    pC = !pC;
+});
+
+function cS(c) { return c <= 5 ? 'bajo-stock' : ''; }
+function cI(a, wM, hM, c) {
+    return new Promise((r, j) => {
+        const l = new FileReader(); l.readAsDataURL(a);
+        l.onload = e => {
+            const i = new Image(); i.src = e.target.result;
+            i.onload = () => {
+                let w = i.width, h = i.height;
+                if(w > h){ if(w > wM){ h = Math.round((h * wM) / w); w = wM; } }
+                else { if(h > hM){ w = Math.round((h * hM) / h); h = hM; } }
+                const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+                const cx = cv.getContext('2d');
+                if(a.type === 'image/jpeg'){ cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, w, h); }
+                cx.drawImage(i, 0, 0, w, h);
+                cv.toBlob(b => b ? r(new File([b], a.name, { type: a.type, lastModified: Date.now() })) : j(new Error("E")), a.type, c);
+            }; i.onerror = j;
+        }; l.onerror = j;
     });
 }
 
 $(document).ready(function() {
+    const IK = 'a6118f7c48e5f1dc450a262a80c68365', TC = 'Clientes', TV = 'Historial_Ventas';
+    const SL = new URLSearchParams(window.location.search).get('negocio') || 'aromasbonitos';
+    let nI = null, tP = [], ct = JSON.parse(localStorage.getItem('cart_temp')) || [], tS = {}, cC = "Todas", vT = [];
 
-    const SUPABASE_URL = 'https://bxwxulztcencoiiqogxy.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'sb_publishable_DcBleL9fOIrDT9cRn4QOfA_b5ALE3JD'; 
-    const IMGBB_API_KEY = 'a6118f7c48e5f1dc450a262a80c68365';
-    const NOMBRE_TABLA = 'Clientes'; 
-    const TABLA_VENTAS = 'Historial_Ventas'; 
-    const NegocioId = 1;
-    
-    let todosLosProductos = [];
-    let carrito = []; 
-    let timersStock = {}; 
+    if(ct.length > 0) { uT(); }
 
-
-    $(".pagina-ticket").hide();
-
-    function cargarProductos() {
-        const urlAPI = `${SUPABASE_URL}/rest/v1/${NOMBRE_TABLA}?select=id,Imagen,Nombre,Precio,Cantidad,delete_url&Negocio_id=eq.${NegocioId}`;
-
+    function iN() {
         $.ajax({
-            url: urlAPI,
-            type: 'GET',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            },
-            success: function(productos) {
-
-                todosLosProductos = organizarPorStockBajo(productos); 
-                renderizarProductos(todosLosProductos);
-            },
-            error: function(err) {
-                console.error("Error al cargar productos:", err);
-                $('#lista-productos').html('<p style="color:red;">Error al conectar con Supabase.</p>');
+            url: `${SU}/rest/v1/Negocios?slug=eq.${SL}&select=*`, type: 'GET',
+            headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}` },
+            success: d => {
+                if (d.length > 0) {
+                    nI = d[0].id;
+                    let n = d[0];
+                    if(n.color_primario) document.documentElement.style.setProperty('--color-primario', n.color_primario);
+                    if(n.color_secundario) document.documentElement.style.setProperty('--color-primario-claro', n.color_secundario);
+                    if(n.logo_url) $('.user-logo, .ticket-logo').attr('src', n.logo_url);
+                    if(n.alias) $('.ticket-mp h4').text(n.alias);
+                    
+                    lP(); lE();
+                }
             }
         });
     }
 
-    function organizarPorStockBajo(productosArray) {
-        let deBajoStock = productosArray.filter(p => p.Cantidad <= 5 && p.Cantidad > 0);
-        let sinStock = productosArray.filter(p => p.Cantidad === 0);
-        let stockNormal = productosArray.filter(p => p.Cantidad > 5);
-        return [...sinStock, ...deBajoStock, ...stockNormal];
+    function lP() {
+        $.ajax({
+            url: `${SU}/rest/v1/${TC}?select=id,Imagen,Nombre,Precio,Cantidad,Etiqueta,delete_url&Negocio_id=eq.${nI}`, type: 'GET',
+            headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}` },
+            success: p => { 
+                tP = [...p.filter(x=>x.Cantidad===0), ...p.filter(x=>x.Cantidad<=5&&x.Cantidad>0), ...p.filter(x=>x.Cantidad>5)]; 
+                generarCategorias(); 
+                fR(); 
+            }
+        });
     }
 
-    function renderizarProductos(productosArray) {        
+    function generarCategorias() {
+        let cats = ["Todas", ...new Set(tP.map(p => p.Etiqueta ? p.Etiqueta.trim() : 'General'))];
+        if (!cats.includes(cC)) cC = "Todas"; 
+
+        const cont = $('#contenedor-categorias');
+        const dataList = $('#lista-categorias');
+        cont.empty(); dataList.empty(); 
+        
+        cats.forEach(c => {
+            cont.append(`<span class="categoria-item ${c === cC ? 'activa' : ''}" data-etiqueta="${c}">${c}</span>`);
+            if(c !== "Todas") dataList.append(`<option value="${c}">`);
+        });
+
+        $('.categoria-item').off('click').on('click', function() {
+            $('.categoria-item').removeClass('activa'); 
+            $(this).addClass('activa');
+            cC = $(this).data('etiqueta'); 
+            fR(); 
+        });
+    }
+
+    $('#buscador').on('input', fR);
+
+    function fR() {
+        let tx = $('#buscador').val().toLowerCase();
+        let a = tP.filter(p => p.Nombre.toLowerCase().includes(tx));
+        if(cC !== "Todas") a = a.filter(p => p.Etiqueta === cC);
+        rP(a);
+    }
+
+    function rP(a) {
         $('#lista-productos').empty();
-
-        if (productosArray.length === 0) {
-            $('#lista-productos').append('<p>No se encontraron productos.</p>');
-            return;
-        }
-
-        productosArray.forEach(function(prod) {
-            let claseStockBajo = obtenerClaseStock(prod.Cantidad);
-            let claseVisual = prod.Cantidad === 0 ? 'sin-stock' : claseStockBajo;
-            let estructura = `
-                <div class="producto-item ${claseVisual}">
+        if(!a.length) return $('#lista-productos').append('<p style="text-align:center; color:#999; margin-top:20px;">No hay productos.</p>');
+        a.forEach(p => {
+            let cl = p.Cantidad === 0 ? 'sin-stock' : cS(p.Cantidad);
+            $('#lista-productos').append(`
+                <div class="producto-item ${cl}">
                     <div class="producto-info">
-                        <img src="${prod.Imagen}" alt="${prod.Nombre}" loading="lazy">
-                        <div>
-                            <strong>${prod.Nombre}</strong>
-                            <p style="margin:5px 0 0 0; color:#7f8c8d; font-size: 0.7rem;">$${prod.Precio}</p>
-                        </div>                 
+                        <img src="${p.Imagen}" loading="lazy">
+                        <div><strong>${p.Nombre}</strong> <b style="margin-left:5px;">${p.Etiqueta||'Gral'}</b><p style="margin:5px 0 0 0; color:#7f8c8d; font-size: 0.7rem;">$${p.Precio}</p></div>                 
                     </div>                                        
                     <div class="stock-control">
-                        <div class="control">
-                            <button class="btn-sumar sumar" data-id="${prod.id}">-</button>
-                            <p>${prod.Cantidad}</p>
-                            <button class="btn-sumar restar" data-id="${prod.id}">+</button>
-                        </div>
-                       <div class="action">
-                            <button class="btn-eliminar" data-id="${prod.id}" data-deleteurl="${prod.delete_url || ''}"><i class="fas fa-trash"></i></button>
-                            <button class="btn-eliminar check" data-id="${prod.id}"><i class="fas fa-check"></i></button>
-                       </div>
+                        <div class="control"><button class="btn-sumar restar" data-id="${p.id}">-</button><p>${p.Cantidad}</p><button class="btn-sumar sumar" data-id="${p.id}">+</button></div>
+                        <div class="action"><button class="btn-eliminar" data-id="${p.id}"><i class="fas fa-trash"></i></button><button class="btn-eliminar check" data-id="${p.id}"><i class="fas fa-check"></i></button></div>
                     </div>
                 </div>
-            `;
-            $('#lista-productos').append(estructura);
+            `);
         });
     }
 
     $(document).on('click', '.check', function() {
-        let idProducto = $(this).data('id');
-        let producto = todosLosProductos.find(p => p.id === idProducto);
-        
-        if (!producto) return;
-        if (producto.Cantidad <= 0) {
-            alert("No hay suficiente stock disponible de este producto.");
-            return;
-        }
-
-
-        producto.Cantidad -= 1;
-        
-
-        let itemEnCarrito = carrito.find(item => item.id === idProducto);
-        if (itemEnCarrito) {
-            itemEnCarrito.cantidadVendida += 1;
-        } else {
-            carrito.push({
-                id: producto.id,
-                Nombre: producto.Nombre,
-                Precio: producto.Precio,
-                cantidadVendida: 1
-            });
-        }
-
-        renderizarProductos(todosLosProductos);
-        actualizarVistaTicket();
-        
-        $(this).css('background-color', '#2ecc71').delay(200).queue(function(next){
-            $(this).css('background-color', '#9ecd9b');
-            next();
-        });
+        let i = $(this).data('id'), p = tP.find(x => x.id === i);
+        if(!p || p.Cantidad <= 0) return;
+        p.Cantidad -= 1;
+        let cI = ct.find(x => x.id === i);
+        if(cI) cI.c += 1; else ct.push({ id: p.id, n: p.Nombre, p: p.Precio, c: 1 });
+        fR(); uT();
+        $(this).css('background-color', '#2ecc71').delay(200).queue(n => { $(this).css('background-color', 'var(--color-primario-claro)'); n(); });
     });
 
-
-    function actualizarVistaTicket() {
-        const ticketProductsCont = $('.ticket-products');
-        ticketProductsCont.empty();
-
-        const hoy = new Date();
-        const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${String(hoy.getFullYear()).substring(2)}`;
-        $('.pagina-ticket h5').text(`Fecha: ${fechaFormateada}`);
-
-        if (carrito.length === 0) {
-            ticketProductsCont.append('<p style="text-align:center; color:#999;">El ticket está vacío.</p>');
-            $('.ticket-total h3 span').text('$0');
-            return;
-        }
-
-        let totalBruto = 0;
-
-
-        carrito.forEach(item => {
-            let subtotalItem = item.Precio * item.cantidadVendida;
-            totalBruto += subtotalItem;
-
-            let fila = `
-                <div class="producto-ticket">
-                    <h4>- ${item.Nombre} (x${item.cantidadVendida})</h4>
-                    <p>$${subtotalItem}</p>
-                </div>
-            `;
-            ticketProductsCont.append(fila);
-        });
-
-
-        let descuentoPorcentaje = parseFloat($('#ticket-descuento').val()) || 0;
-        let descuentoMonto = (totalBruto * descuentoPorcentaje) / 100;
-        let totalNeto = totalBruto - descuentoMonto;
-
-        $('.ticket-total h3 span').text(`$${Math.round(totalNeto)}`);
+    function uT() {
+        localStorage.setItem('cart_temp', JSON.stringify(ct)); 
+        const c = $('.ticket-products'); c.empty();
+        if(!ct.length) { c.append('<div class="producto-ticket"><h4>- Añade productos aqui</h4><p>$0</p></div>'); $('.ticket-total h3 span').text('$0'); cV(); return; }
+        let t = 0;
+        ct.forEach(i => { let s = i.p * i.c; t += s; c.append(`<div class="producto-ticket"><h4>- ${i.n} (x${i.c})</h4><p>$${s}</p></div>`); });
+        let d = (t * (parseFloat($('#ticket-descuento').val()) || 0)) / 100;
+        $('.ticket-total h3 span').text(`$${Math.round(t - d)}`);
+        cV();
     }
 
-    $('#ticket-descuento').on('input', function() {
-        actualizarVistaTicket();
-    });
+    function cV() {
+        let t = parseFloat($('.ticket-total h3 span').text().replace('$',''))||0;
+        let p = parseFloat($('#monto-pago').val())||0;
+        let v = p - t;
+        $('#monto-vuelto').text(`$${v > 0 ? v : 0}`);
+    }
 
+    $('#ticket-descuento, #monto-pago').on('input', uT);
+    $('#btn-borrar-ticket').click(() => { ct = []; localStorage.removeItem('cart_temp'); $('#ticket-descuento, #monto-pago').val(''); uT(); });
 
     $('#btn-imprimir').on('click', function() {
-        if (carrito.length === 0) {
-            alert("No hay productos en el ticket para guardar.");
-            return;
-        }
-        cargarEstadisticas()
-
-        $('#btn-imprimir').prop('disabled', true).text('Guardando Venta...');
-
-        let totalFinal = parseFloat($('.ticket-total h3 span').text().replace('$', ''));
-
-        let ventaParaGuardar = {
-            Negocio_id: NegocioId,
-            Total_Venta: totalFinal,
-            Metodo_Pago: $('#metodo-pago').val(), 
-            Detalle_Productos: carrito 
-        };
-
+        if(!ct.length) return;
+        $(this).prop('disabled', true).text('Guardando...');
+        let tF = parseFloat($('.ticket-total h3 span').text().replace('$',''));
         $.ajax({
-            url: `${SUPABASE_URL}/rest/v1/${TABLA_VENTAS}`,
-            type: 'POST',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            data: JSON.stringify(ventaParaGuardar),
-            success: function() {
+            url: `${SU}/rest/v1/${TV}`, type: 'POST',
+            headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`, 'Content-Type': 'application/json' },
+            data: JSON.stringify({ Negocio_id: nI, Total_Venta: tF, Metodo_Pago: $('#metodo-pago').val(), Detalle_Productos: ct }),
+            success: () => {
+                Promise.all(ct.map(i => $.ajax({
+                    url: `${SU}/rest/v1/${TC}?id=eq.${i.id}`, type: 'PATCH',
+                    headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`, 'Content-Type': 'application/json' },
+                    data: JSON.stringify({ Cantidad: tP.find(p => p.id === i.id).Cantidad })
+                }))).then(() => {
+                    $('#btn-imprimir, #btn-borrar-ticket').hide();
+                    html2canvas(document.querySelector('.pagina-ticket'), { backgroundColor: '#fff5e7', useCORS: true, scale: 2 }).then(cs => {
+                        const a = document.createElement('a'); a.href = cs.toDataURL('image/png');
+                        const h = new Date(); a.download = `ticket(${h.getDate()}-${h.getMonth()+1}).png`;
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        ct = []; localStorage.removeItem('cart_temp'); $('#ticket-descuento, #monto-pago').val(''); uT(); lP(); lE();
+                        $('#btn-imprimir').show().prop('disabled', false).text('Descargar Ticket');
+                        $('#btn-borrar-ticket').show();
 
-                let actualizacionesStock = carrito.map(item => {
-                    let prodOriginal = todosLosProductos.find(p => p.id === item.id);
-                    return $.ajax({
-                        url: `${SUPABASE_URL}/rest/v1/${NOMBRE_TABLA}?id=eq.${item.id}`,
-                        type: 'PATCH',
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        data: JSON.stringify({ Cantidad: prodOriginal.Cantidad })
+                        Toast.fire({ icon: 'success', title: 'Venta registrada con éxito' });
                     });
+                }).catch(() => {
+                    $('#btn-imprimir').show().prop('disabled', false).text('Descargar Ticket');
+                    Toast.fire({ icon: 'error', title: 'Hubo un error al actualizar el stock' });
                 });
-
-                Promise.all(actualizacionesStock)
-                    .then(() => {
-                        alert("Venta registrada y stock actualizado.");
-
-                        $('#btn-imprimir').hide();
-
-                        const elementoTicket = document.querySelector('.pagina-ticket');
-
-                        html2canvas(elementoTicket, {
-                            backgroundColor: '#f4f7f6',
-                            useCORS: true,              
-                            scale: 2                    
-                        }).then(canvas => {
-
-                            const imagenBase64 = canvas.toDataURL('image/png');
-
-                            const hoy = new Date();
-                            const dia = String(hoy.getDate()).padStart(2, '0');
-                            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
-                            const anio = String(hoy.getFullYear()).substring(2);
-                            const nombreArchivo = `ticket(${dia}-${mes}-${anio}).png`;
-
-                            const enlaceDescarga = document.createElement('a');
-                            enlaceDescarga.href = imagenBase64;
-                            enlaceDescarga.download = nombreArchivo;
-                            
-                            document.body.appendChild(enlaceDescarga);
-                            enlaceDescarga.click();
-                            document.body.removeChild(enlaceDescarga);
-
-
-                            $('#btn-imprimir').show();
-
-                            carrito = [];
-                            $('#ticket-descuento').val('');
-                            actualizarVistaTicket();
-                            cargarProductos();
-
-                            $('#btn-imprimir').prop('disabled', false).text('Descargar Ticket');
-                        });
-                    })
-                    .catch(err => {
-                        console.error("Error al descontar stock:", err);
-                        alert("Venta guardada pero hubo un error al actualizar los stocks.");
-                        $('#btn-imprimir').prop('disabled', false).text('Descargar Ticket');
-                        $('#btn-imprimir').show();
-                    });
-            },
-            error: function(err) {
-                console.error("Error al registrar venta:", err);
-                alert("No se pudo guardar la venta en Supabase.");
-                $('#btn-imprimir').prop('disabled', false).text('Descargar Ticket');
             }
         });
-    });
-
-
-    $('#buscador').on('input', function() {
-        let textoBusqueda = $(this).val().toLowerCase();
-        let productosFiltrados = todosLosProductos.filter(function(prod) {
-            return prod.Nombre.toLowerCase().includes(textoBusqueda);
-        });
-
-        renderizarProductos(organizarPorStockBajo(productosFiltrados));
     });
 
     $('#form-producto').on('submit', async function(e) {
-        e.preventDefault();
-        
-        $('#mensaje-estado').css('color', '#34495e').text('Optimizando y comprimiendo imagen...');
-        $('#btn-guardar').prop('disabled', true);
-
-        let archivoOriginal = $('#p-imagen')[0].files[0];
-        
+        e.preventDefault(); $('#btn-guardar').prop('disabled', true);
         try {
-            let archivoComprimido = await comprimirImagen(archivoOriginal, 500, 500, 0.7);
-            
-            $('#mensaje-estado').text('Subiendo imagen...');
-
-            let formData = new FormData();
-            formData.append('image', archivoComprimido); 
-
+            let im = await cI($('#p-imagen')[0].files[0], 500, 500, 0.7);
+            let fd = new FormData(); fd.append('image', im);
             $.ajax({
-                url: `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-                type: 'POST',
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function(resImgbb) {
-                    let urlFoto = resImgbb.data.url;
-                    let urlBorradoImgbb = resImgbb.data.delete_url; 
-
-                    $('#mensaje-estado').text('Registrando producto...');
-
-                    let nuevoProducto = {
-                        Negocio_id: NegocioId,
-                        Nombre: $('#p-nombre').val(),
-                        Precio: parseFloat($('#p-precio').val()),
-                        Cantidad: parseInt($('#p-cantidad').val()),
-                        Imagen: urlFoto,
-                        delete_url: urlBorradoImgbb 
-                    };
-
+                url: `https://api.imgbb.com/1/upload?key=${IK}`, type: 'POST', data: fd, contentType: false, processData: false,
+                success: r => {
                     $.ajax({
-                        url: `${SUPABASE_URL}/rest/v1/${NOMBRE_TABLA}`,
-                        type: 'POST',
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=representation'
-                        },
-                        data: JSON.stringify(nuevoProducto),
-                        success: function(data) {
-                            $('#mensaje-estado').css('color', 'green').text('¡Producto añadido exitosamente!');
-                            $('#form-producto')[0].reset();
-
-                            if ($('#nombre-archivo').length) {
-                                $('#nombre-archivo').text("Ningún archivo seleccionado");
-                            }
+                        url: `${SU}/rest/v1/${TC}`, type: 'POST',
+                        headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+                        data: JSON.stringify({ Negocio_id: nI, Nombre: $('#p-nombre').val(), Precio: parseFloat($('#p-precio').val()), Cantidad: parseInt($('#p-cantidad').val()), Etiqueta: $('#p-etiqueta').val(), Imagen: r.data.url }),
+                        success: d => {
+                            $('#form-producto')[0].reset(); $('#btn-guardar').prop('disabled', false);
+                            if(d && d.length) { tP.push(d[0]); fR(); }
                             
-                            $('#btn-guardar').prop('disabled', false);
                             
-                            if(data && data.length > 0) {
-                                todosLosProductos.push(data[0]);
-                                todosLosProductos = organizarPorStockBajo(todosLosProductos);
-                                renderizarProductos(todosLosProductos);
-                            }
-                        },
-                        error: function(err) {
-                            console.error(err);
-                            $('#mensaje-estado').css('color', 'red').text('Error al guardar.');
-                            $('#btn-guardar').prop('disabled', false);
+                            Toast.fire({ icon: 'success', title: 'Producto añadido correctamente' });
                         }
                     });
-                },
-                error: function(xhr) {
-                    console.error("Detalles del error ImgBB:", xhr.responseText);
-                    $('#mensaje-estado').css('color', 'red').text('Error al subir la imagen.');
-                    $('#btn-guardar').prop('disabled', false);
                 }
             });
-
-        } catch (error) {
-            console.error("Error en la compresión:", error);
-            $('#mensaje-estado').css('color', 'red').text('No se pudo procesar la imagen.');
-            $('#btn-guardar').prop('disabled', false);
+        } catch (er) { 
+            $('#btn-guardar').prop('disabled', false); 
+            Toast.fire({ icon: 'error', title: 'Error al procesar la imagen' });
         }
     });
-
 
     $(document).on('click', '.btn-eliminar:not(.check)', function() {
-        let idProducto = $(this).data('id');
-
-        if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-            $.ajax({
-                url: `${SUPABASE_URL}/rest/v1/${NOMBRE_TABLA}?id=eq.${idProducto}`,
-                type: 'DELETE',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                },
-                success: function() {
-                    alert('Producto eliminado de la base de datos.');
-                    todosLosProductos = todosLosProductos.filter(p => p.id !== idProducto);
-                    renderizarProductos(todosLosProductos);
-                },
-                error: function(err) {
-                    console.error(err);
-                    alert('No se pudo eliminar el producto de Supabase.');
-                }
-            });
-        }
+        let i = $(this).data('id');
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¡No podrás revertir la eliminación de este producto!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `${SU}/rest/v1/${TC}?id=eq.${i}`, type: 'DELETE',
+                    headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}` },
+                    success: () => { 
+                        tP = tP.filter(p => p.id !== i); 
+                        fR(); 
+                        Toast.fire({ icon: 'success', title: 'Producto eliminado' });
+                    }
+                });
+            }
+        });
     });
-
 
     $(document).on('click', '.btn-sumar', function() {
-        let idProducto = $(this).data('id');
-        let accion = $(this).hasClass('restar') ? 1 : -1;
-
-        let producto = todosLosProductos.find(p => p.id === idProducto);
-        if (!producto) return;
-
-        let nuevaCantidad = producto.Cantidad + accion;
-        if (nuevaCantidad < 0) nuevaCantidad = 0;
-
-        producto.Cantidad = nuevaCantidad;
-        
-        renderizarProductos(todosLosProductos);
-
-        if (timersStock[idProducto]) {
-            clearTimeout(timersStock[idProducto]);
-        }
-
-        timersStock[idProducto] = setTimeout(function() {
+        let i = $(this).data('id'), p = tP.find(x => x.id === i);
+        if(!p) return;
+        p.Cantidad = Math.max(0, p.Cantidad + ($(this).hasClass('sumar') ? 1 : -1));
+        fR();
+        if(tS[i]) clearTimeout(tS[i]);
+        tS[i] = setTimeout(() => {
             $.ajax({
-                url: `${SUPABASE_URL}/rest/v1/${NOMBRE_TABLA}?id=eq.${idProducto}`,
-                type: 'PATCH',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify({ Cantidad: nuevaCantidad }),
-                success: function() {
-                    console.log(`Guardado exitoso de stock: ${nuevaCantidad}`);
-                },
-                error: function(err) {
-                    console.error(err);
-                    alert('No se pudo actualizar la cantidad en la base de datos.');
-                }
+                url: `${SU}/rest/v1/${TC}?id=eq.${i}`, type: 'PATCH',
+                headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`, 'Content-Type': 'application/json' },
+                data: JSON.stringify({ Cantidad: p.Cantidad })
             });
-        }, 1000); 
+        }, 1000);
     });
 
-    cargarProductos();
-    function cargarEstadisticas() {
-        const urlAPI = `${SUPABASE_URL}/rest/v1/${TABLA_VENTAS}?select=*&Negocio_id=eq.${NegocioId}`;
-
+    function lE() {
         $.ajax({
-            url: urlAPI,
-            type: 'GET',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            },
-            success: function(ventas) {
+            url: `${SU}/rest/v1/${TV}?select=*&Negocio_id=eq.${nI}`, type: 'GET',
+            headers: { 'apikey': SK, 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}` },
+            success: v => {
+                let d = new Date(), fL = d.toLocaleDateString('en-CA'), m = d.getMonth(), y = d.getFullYear();
+                vT = v.filter(x => new Date(x.created_at).toLocaleDateString('en-CA') === fL);
+                let vM = v.filter(x => { let dx = new Date(x.created_at); return dx.getMonth() === m && dx.getFullYear() === y; });
+                let t = { c:0, ef:0, mp:0, tj:0, bn:0 }, tM = 0;
+                vM.forEach(x => tM += x.Total_Venta);
+                vT.forEach(x => {
+                    t.c += x.Total_Venta;
+                    if(x.Metodo_Pago==="Efectivo") t.ef+=x.Total_Venta; else if(x.Metodo_Pago==="Mercado Pago") t.mp+=x.Total_Venta;
+                    else if(x.Metodo_Pago==="Tarjeta") t.tj+=x.Total_Venta; else if(x.Metodo_Pago==="Transferencia") t.bn+=x.Total_Venta;
+                });
+                $('#stats-fecha').text(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`);
+                $('#stats-total').text(`$ ${t.c.toLocaleString()}`); $('#stats-cantidad').text(`Tickets de hoy: ${vT.length}`);
+                $('#stats-mp').text(`$ ${t.mp.toLocaleString()}`); $('#stats-efectivo').text(`$ ${t.ef.toLocaleString()}`);
+                $('#stats-tarjeta').text(`$ ${t.tj.toLocaleString()}`); $('#stats-banco').text(`$ ${t.bn.toLocaleString()}`);
+                $('#stats-total-mes').text(`$ ${tM.toLocaleString()}`);
+                let mN = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+                $('#stats-mes').text(mN[m]);
                 
-                const hoy = new Date();
-                const fechaLocal = hoy.toLocaleDateString('en-CA');
-              
-                let ventasHoy = ventas.filter(v => {
-                    let fechaVenta = new Date(v.created_at).toLocaleDateString('en-CA');
-                    return fechaVenta === fechaLocal;
-                });
-
-                let totalCaja = 0;
-                let totalEfectivo = 0;
-                let totalMP = 0;
-                let totalTarjeta = 0;
-                let totalBanco = 0;
-
-                ventasHoy.forEach(v => {
-                    totalCaja += v.Total_Venta;
-                    
-                    if (v.Metodo_Pago === "Efectivo") totalEfectivo += v.Total_Venta;
-                    else if (v.Metodo_Pago === "Mercado Pago") totalMP += v.Total_Venta;
-                    else if (v.Metodo_Pago === "Tarjeta") totalTarjeta += v.Total_Venta;
-                    else if (v.Metodo_Pago === "Transferencia") totalBanco += v.Total_Venta;
-                });
-
-                const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${String(hoy.getFullYear()).substring(2)}`;
-                $('#stats-fecha').text(fechaFormateada);
-                $('#stats-total').text(`$ ${totalCaja.toLocaleString()}`);
-                $('#stats-cantidad').text(`Tickets de hoy: ${ventasHoy.length}`);
-
-                $('#stats-mp').html(`<i class="fa-solid fa-qrcode"></i> $ ${totalMP.toLocaleString()}`);
-                $('#stats-efectivo').html(`<i class="fa-solid fa-money-bill-wave"></i> $ ${totalEfectivo.toLocaleString()}`);
-                $('#stats-tarjeta').html(`<i class="fa-solid fa-credit-card"></i> $ ${totalTarjeta.toLocaleString()}`);
-                $('#stats-banco').html(`<i class="fa-solid fa-bank"></i> $ ${totalBanco.toLocaleString()}`);
-
-                $('#stats-historial').empty();
-                if(ventasHoy.length === 0) {
-                     $('#stats-historial').append('<p style="color:#999; font-size:0.8rem;">No hay tickets registrados hoy.</p>');
-                } else {
-                    ventasHoy.forEach(v => {
-                        $('#stats-historial').append(`
-                            <div style="border-bottom: 1px solid #eee; padding: 10px 0; display:flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                                <span><i class="fas fa-receipt" style="color:#ccc; margin-right:5px;"></i> ${v.Metodo_Pago}</span>
-                                <strong style="color: #5b8048;">$${v.Total_Venta}</strong>
-                            </div>
-                        `);
-                    });
-                }
-
-                let conteoProductos = {};
-                ventasHoy.forEach(v => {
-                    let detalles = typeof v.Detalle_Productos === 'string' ? JSON.parse(v.Detalle_Productos) : v.Detalle_Productos;
-                    detalles.forEach(item => {
-                        if(!conteoProductos[item.Nombre]) {
-                            conteoProductos[item.Nombre] = 0;
-                        }
-                        conteoProductos[item.Nombre] += item.cantidadVendida;
-                    });
-                });
-
-            
-                let top3 = Object.keys(conteoProductos).map(nombre => {
-                    return { nombre: nombre, cantidad: conteoProductos[nombre] };
-                }).sort((a, b) => b.cantidad - a.cantidad).slice(0, 3);
-
-                $('#stats-top-productos').empty();
-                if(top3.length === 0) {
-                    $('#stats-top-productos').append('<p>Sin ventas para calcular el Top 3.</p>');
-                } else {
-                    top3.forEach((prod, index) => {
-                        $('#stats-top-productos').append(`
-                            <div style="display:flex; justify-content: space-between; padding: 5px 0;">
-                                <span><strong>#${index + 1}</strong> ${prod.nombre}</span>
-                                <strong>x${prod.cantidad}</strong>
-                            </div>
-                        `);
-                    });
-                }
-            },
-            error: function(err) {
-                console.error("Error al cargar estadísticas:", err);
+                $('#stats-historial, #stats-top-productos').empty();
+                if(!vT.length) { $('#stats-historial').append('<p style="font-size:0.8rem;color:#999;">Sin tickets hoy.</p>'); $('#stats-top-productos').append('<p style="font-size:0.8rem;color:#999;">Sin ventas hoy.</p>'); return; }
+                vT.forEach(x => $('#stats-historial').append(`<div style="border-bottom:1px solid #eee; padding:10px 0; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;"><span><i class="fas fa-receipt" style="color:#ccc; margin-right:5px;"></i> ${x.Metodo_Pago}</span><strong style="color:var(--color-primario);">$${x.Total_Venta}</strong></div>`));
+                let c = {}; vT.forEach(x => (typeof x.Detalle_Productos==='string'?JSON.parse(x.Detalle_Productos):x.Detalle_Productos).forEach(i => c[i.n] = (c[i.n]||0) + i.c));
+                Object.keys(c).map(n => ({n, c:c[n]})).sort((a,b)=>b.c-a.c).slice(0,3).forEach((p,i) => $('#stats-top-productos').append(`<div style="display:flex; justify-content:space-between; padding:5px 0;"><span><strong>#${i+1}</strong> ${p.n}</span><strong>x${p.c}</strong></div>`));
             }
         });
     }
 
-    cargarEstadisticas()
+    $('#btn-exportar-csv').click(() => {
+        if(!vT.length) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sin datos',
+                text: 'No hay ventas hoy para exportar.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+        let csv = "Fecha,Metodo Pago,Total\n" + vT.map(v => `${new Date(v.created_at).toLocaleString()},${v.Metodo_Pago},${v.Total_Venta}`).join('\n');
+        let b = new Blob([csv], {type: 'text/csv'});
+        let a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `Caja_${new Date().toLocaleDateString('en-CA')}.csv`;
+        a.click();
+        
+        Toast.fire({ icon: 'success', title: 'Archivo CSV exportado con éxito' });
+    });
+
+    iN();
 });
